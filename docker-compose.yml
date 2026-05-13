@@ -1,0 +1,115 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: photo-map-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ${HOST_DATA_DIR:-./data}/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: photo-map-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    container_name: photo-map-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL}
+      DATA_DIR: /data
+      ORIGINALS_DIR: /data/originals
+      UPLOADS_DIR: /data/uploads
+      THUMBNAILS_DIR: /data/thumbnails
+      PREVIEWS_DIR: /data/previews
+      EXPORTS_DIR: /data/exports
+      TEMP_DIR: /data/temp
+      LOG_DIR: /data/logs
+      REPORTS_DIR: /data/reports
+      BACKUPS_DIR: /data/backups
+      DB_STARTUP_RETRY_SECONDS: ${DB_STARTUP_RETRY_SECONDS:-0}
+      DB_STARTUP_RETRY_INTERVAL: ${DB_STARTUP_RETRY_INTERVAL:-3}
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-999}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ${HOST_DATA_DIR:-./data}:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).read()\""]
+      interval: 15s
+      timeout: 5s
+      retries: 240
+      start_period: 120s
+    restart: unless-stopped
+
+  worker-media:
+    build:
+      context: ./worker
+    container_name: photo-map-worker-media
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL}
+      DATA_DIR: /data
+      ORIGINALS_DIR: /data/originals
+      UPLOADS_DIR: /data/uploads
+      THUMBNAILS_DIR: /data/thumbnails
+      PREVIEWS_DIR: /data/previews
+      EXPORTS_DIR: /data/exports
+      TEMP_DIR: /data/temp
+      LOG_DIR: /data/logs
+      REPORTS_DIR: /data/reports
+      BACKUPS_DIR: /data/backups
+    volumes:
+      - ./worker/app:/app/app
+      - ${HOST_DATA_DIR:-./data}:/data
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: node:20-alpine
+    container_name: photo-map-frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      VITE_MAX_UPLOAD_FILES: ${VITE_MAX_UPLOAD_FILES:-999}
+      VITE_UPLOAD_CONCURRENCY: ${VITE_UPLOAD_CONCURRENCY:-3}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped

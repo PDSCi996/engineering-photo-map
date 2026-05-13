@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Engineering Photo Map. Do not paste real `.env` files, photos, database dumps, logs with secrets, internal IPs, private domains, or credentials.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: e.g. public release commit SHA
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the issue and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start services with docker compose
+        2. Open the frontend
+        3. Upload a sample photo
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Docker version, browser, and deployment mode. Use sanitized values.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove secrets, private URLs, real photos, internal IPs, and personal data before attaching.
