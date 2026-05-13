@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.7-public-initial - 2026-05-13
+
+- Published the first public release candidate for Engineering Photo Map.
+- Reworked public documentation into Chinese-first bilingual guidance.
+- Added English summaries to Chinese public docs.
+- Kept real photos, logs, databases, deployment records, domains, IP addresses, ports, and credentials out of the public repository.
+- Prepared the repository for GitHub Releases and public issue intake.
+
 ## Public Repository Preparation - 2026-05-12
 
 - Prepared a public-safe project copy from the local working repository.

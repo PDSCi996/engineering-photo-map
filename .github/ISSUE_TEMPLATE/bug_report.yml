@@ -1,41 +1,45 @@
-name: Bug report
-description: Report a reproducible problem
+name: Bug report / 问题反馈
+description: Report a reproducible problem / 反馈可复现的问题
 title: "[Bug]: "
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve Engineering Photo Map. Do not paste real `.env` files, photos, database dumps, logs with secrets, internal IPs, private domains, or credentials.
+        感谢帮助改进工程照片地图管理系统。请不要粘贴真实 `.env`、真实照片、数据库、包含密钥的日志、内网 IP、私有域名、真实端口或账号密码。
+
+        Thanks for helping improve Engineering Photo Map. Do not paste real `.env` files, real photos, database dumps, logs with secrets, internal IPs, private domains, real ports, or credentials.
   - type: input
     id: version
     attributes:
-      label: Version or commit
-      placeholder: e.g. public release commit SHA
+      label: 版本或提交 / Version or commit
+      description: 请填写公开版本号或 commit。Use a public release version or commit SHA.
+      placeholder: v0.4.7-public-initial
   - type: textarea
     id: description
     attributes:
-      label: What happened?
-      description: Describe the issue and expected behavior.
+      label: 问题描述 / What happened?
+      description: 请描述实际现象和期望结果。Describe the actual behavior and expected behavior.
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
+      label: 复现步骤 / Steps to reproduce
+      description: 请尽量使用可公开的示例。Use public-safe examples where possible.
       placeholder: |
-        1. Start services with docker compose
-        2. Open the frontend
-        3. Upload a sample photo
+        1. 使用 docker compose 启动服务 / Start services with docker compose
+        2. 打开前端页面 / Open the frontend
+        3. 上传脱敏测试图片 / Upload a sanitized test image
     validations:
       required: true
   - type: textarea
     id: environment
     attributes:
-      label: Environment
-      description: OS, Docker version, browser, and deployment mode. Use sanitized values.
+      label: 环境信息 / Environment
+      description: 操作系统、Docker 版本、浏览器和部署方式。请使用脱敏值。OS, Docker version, browser, and deployment mode. Use sanitized values.
   - type: textarea
     id: logs
     attributes:
-      label: Sanitized logs or screenshots
-      description: Remove secrets, private URLs, real photos, internal IPs, and personal data before attaching.
+      label: 脱敏日志或截图 / Sanitized logs or screenshots
+      description: 上传前请移除密钥、私有 URL、真实照片、内网 IP、真实端口和个人数据。Remove secrets, private URLs, real photos, internal IPs, real ports, and personal data before attaching.

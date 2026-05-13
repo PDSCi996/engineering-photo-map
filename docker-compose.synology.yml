@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-photo_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
     volumes:
-      - ${HOST_DATA_DIR:-/volume1/docker/photo-map-v2/data}/postgres:/var/lib/postgresql/data
+      - ${HOST_DATA_DIR:?set HOST_DATA_DIR}/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-photo_user} -d ${POSTGRES_DB:-photo_map}"]
       interval: 5s
@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - ${HOST_DATA_DIR:-/volume1/docker/photo-map-v2/data}/redis:/data
+      - ${HOST_DATA_DIR:?set HOST_DATA_DIR}/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -62,9 +62,9 @@ services:
       MEDIA_URL_PREFIX: /media
       MEDIA_PREFIX: /media
 
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://photos.example.com:8443}
-      API_BASE_URL: ${API_BASE_URL:-https://api.photos.example.com:8443}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://photos.example.com:8443}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL}
+      API_BASE_URL: ${API_BASE_URL:?set API_BASE_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
 
       DB_STARTUP_RETRY_SECONDS: ${DB_STARTUP_RETRY_SECONDS:-0}
       DB_STARTUP_RETRY_INTERVAL: ${DB_STARTUP_RETRY_INTERVAL:-3}
@@ -72,9 +72,9 @@ services:
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
       MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-999}
     volumes:
-      - ${HOST_DATA_DIR:-/volume1/docker/photo-map-v2/data}:/data
+      - ${HOST_DATA_DIR:?set HOST_DATA_DIR}:/data
     ports:
-      - "${API_PORT:-18000}:8000"
+      - "${API_PORT:?set API_PORT}:8000"
     healthcheck:
       test:
         [
@@ -121,7 +121,7 @@ services:
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
       MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES:-999}
     volumes:
-      - ${HOST_DATA_DIR:-/volume1/docker/photo-map-v2/data}:/data
+      - ${HOST_DATA_DIR:?set HOST_DATA_DIR}:/data
 
   frontend:
     build:
@@ -132,17 +132,13 @@ services:
       api:
         condition: service_healthy
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.photos.example.com:8443}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:?set VITE_API_BASE_URL}
       VITE_MAX_UPLOAD_FILES: ${VITE_MAX_UPLOAD_FILES:-999}
       VITE_UPLOAD_CONCURRENCY: ${VITE_UPLOAD_CONCURRENCY:-2}
     ports:
-      - "${FRONTEND_PORT:-25173}:5173"
+      - "${FRONTEND_PORT:?set FRONTEND_PORT}:5173"
 
 networks:
   default:
-    name: photo-map-v2_10_77_45_default
+    name: ${COMPOSE_PROJECT_NAME:-engineering-photo-map}_default
     driver: bridge
-    ipam:
-      config:
-        - subnet: 10.77.45.0/24
-          gateway: 10.77.45.1

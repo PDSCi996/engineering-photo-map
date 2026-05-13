@@ -1,28 +1,30 @@
-name: Feature request
-description: Suggest an improvement
+name: Feature request / 功能建议
+description: Suggest an improvement / 提出改进建议
 title: "[Feature]: "
 labels: [enhancement]
 body:
   - type: markdown
     attributes:
       value: |
-        Please keep examples public-safe. Do not include private domains, internal IPs, credentials, real photos, or customer data.
+        请保持示例信息适合公开。不要包含私有域名、内网 IP、真实端口、账号密码、真实照片或客户数据。
+
+        Please keep examples public-safe. Do not include private domains, internal IPs, real ports, credentials, real photos, or customer data.
   - type: textarea
     id: problem
     attributes:
-      label: Problem or use case
-      description: What workflow should this improve?
+      label: 问题或使用场景 / Problem or use case
+      description: 这个建议希望改进什么工作流程？What workflow should this improve?
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      description: Describe the behavior you would like.
+      label: 建议方案 / Proposed solution
+      description: 请描述你希望看到的行为。Describe the behavior you would like.
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives considered
-      description: Optional.
+      label: 备选方案 / Alternatives considered
+      description: 可选。Optional.
