@@ -15,6 +15,9 @@
 .env.*
 !.env.example
 !.env.*.example
+photo-map-prod.local.env
+photo-map-test.local.env
+*.local.env
 
 
 # ============================================================

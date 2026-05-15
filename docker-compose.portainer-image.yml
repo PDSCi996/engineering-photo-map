@@ -1,0 +1,193 @@
+version: "3.9"
+
+# ============================================================
+# 群晖 Portainer 镜像拉取版通用 Compose
+#
+# 用途：
+# - 正式堆栈 photo-map-prod 和测试堆栈 photo-map-test 共用这一份 yml。
+# - 不在群晖 NAS 上 build 源码，只从 GHCR 拉取已经构建好的镜像。
+# - 所有部署差异都放到 env 文件或 Portainer Stack 环境变量中。
+#
+# 重要变量：
+# - IMAGE_TAG 控制 frontend/api/worker 三个应用镜像使用哪个版本。
+# - HOST_DATA_DIR 是群晖宿主机上的真实数据目录。
+# - /data 是容器内部统一数据目录。
+# - FRONTEND_PORT 是前端页面映射到群晖的端口。
+# - API_PORT 是后端 API 映射到群晖的端口。
+# - DOCKER_NETWORK_SUBNET / DOCKER_NETWORK_GATEWAY 用于固定 Docker 网络地址。
+# ============================================================
+
+services:
+  # ==========================================================
+  # db：PostgreSQL/PostGIS 数据库
+  #
+  # 保存项目、照片、任务、GPS 坐标等结构化数据。
+  # 数据库文件也放在 HOST_DATA_DIR 下，统一由群晖目录持久化。
+  # ==========================================================
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} # PostgreSQL 数据库名，例如 photo_map。
+      POSTGRES_USER: ${POSTGRES_USER} # PostgreSQL 用户名。
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # PostgreSQL 密码，正式部署必须改成强密码。
+      PGDATA: /data/postgres # PostgreSQL 实际数据目录，放在统一挂载的 /data/postgres 下。
+    volumes:
+      - ${HOST_DATA_DIR}:/data # HOST_DATA_DIR 是群晖宿主机真实数据目录；/data 是容器内部统一数据目录。
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  # ==========================================================
+  # redis：任务队列和缓存
+  #
+  # 用于 api 与 worker 之间传递后台照片处理任务。
+  # redis 使用固定版本镜像 redis:7-alpine，不使用 latest。
+  # ==========================================================
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--dir", "/data/redis"]
+    volumes:
+      - ${HOST_DATA_DIR}:/data # 与其他服务共用宿主机数据目录，Redis 数据放在 /data/redis。
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+
+  # ==========================================================
+  # api：FastAPI 后端接口服务
+  #
+  # 提供项目、照片、地图点位、导出、健康检查等 API。
+  # API_PORT 是后端 API 映射到群晖的端口。
+  # PUBLIC_BASE_URL / API_BASE_URL 是外部访问地址。
+  # CORS_ORIGINS 是允许访问 API 的前端地址。
+  # ==========================================================
+  api:
+    image: ghcr.io/pdsci996/engineering-photo-map-api:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} # 数据库名，和 db 服务保持一致。
+      POSTGRES_USER: ${POSTGRES_USER} # 数据库用户名，和 db 服务保持一致。
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # 数据库密码，和 db 服务保持一致。
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB} # api 连接 db 的数据库地址。
+      REDIS_URL: redis://redis:6379/0 # api 连接 redis 的任务队列地址。
+      DATA_DIR: /data # 容器内部统一数据目录。
+      ORIGINALS_DIR: /data/originals # 原图目录。
+      UPLOADS_DIR: /data/uploads # 上传暂存目录。
+      THUMBNAILS_DIR: /data/thumbnails # 缩略图目录。
+      PREVIEWS_DIR: /data/previews # 预览图目录。
+      EXPORTS_DIR: /data/exports # 导出文件目录。
+      TEMP_DIR: /data/temp # 临时文件目录。
+      LOG_DIR: /data/logs # 日志目录。
+      REPORTS_DIR: /data/reports # 检查报告目录。
+      BACKUPS_DIR: /data/backups # 备份目录。
+      MEDIA_URL_PREFIX: ${MEDIA_URL_PREFIX} # 对外媒体 URL 前缀。
+      MEDIA_PREFIX: ${MEDIA_PREFIX} # 应用内部媒体路径前缀。
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL} # 外部访问前端的完整地址。
+      API_BASE_URL: ${API_BASE_URL} # 外部访问 API 的完整地址。
+      CORS_ORIGINS: ${CORS_ORIGINS} # 允许访问 API 的前端地址。
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS} # 后端允许的 Host 列表。
+      DB_STARTUP_RETRY_SECONDS: ${DB_STARTUP_RETRY_SECONDS} # 数据库启动等待总秒数。
+      DB_STARTUP_RETRY_INTERVAL: ${DB_STARTUP_RETRY_INTERVAL} # 数据库重试间隔秒数。
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB} # 单文件上传大小限制。
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES} # 批量上传文件数量限制。
+    volumes:
+      - ${HOST_DATA_DIR}:/data # HOST_DATA_DIR 是群晖宿主机真实数据目录；/data 是容器内部统一数据目录。
+    ports:
+      - "${API_PORT}:8000" # API_PORT 是后端 API 映射到群晖的端口，容器内部端口固定为 8000。
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3).read()\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  # ==========================================================
+  # worker：Celery 后台照片处理服务
+  #
+  # 负责后台生成缩略图、预览图、读取照片元数据等耗时任务。
+  # worker 与 api 使用同一套 DATABASE_URL 和 REDIS_URL。
+  # ==========================================================
+  worker:
+    image: ghcr.io/pdsci996/engineering-photo-map-worker:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} # 数据库名，和 db 服务保持一致。
+      POSTGRES_USER: ${POSTGRES_USER} # 数据库用户名，和 db 服务保持一致。
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # 数据库密码，和 db 服务保持一致。
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB} # worker 连接 db 的数据库地址。
+      REDIS_URL: redis://redis:6379/0 # worker 连接 redis 的任务队列地址。
+      DATA_DIR: /data # 容器内部统一数据目录。
+      ORIGINALS_DIR: /data/originals # 原图目录。
+      UPLOADS_DIR: /data/uploads # 上传暂存目录。
+      THUMBNAILS_DIR: /data/thumbnails # 缩略图目录。
+      PREVIEWS_DIR: /data/previews # 预览图目录。
+      EXPORTS_DIR: /data/exports # 导出文件目录。
+      TEMP_DIR: /data/temp # 临时文件目录。
+      LOG_DIR: /data/logs # 日志目录。
+      REPORTS_DIR: /data/reports # 检查报告目录。
+      BACKUPS_DIR: /data/backups # 备份目录。
+      MEDIA_URL_PREFIX: ${MEDIA_URL_PREFIX} # 对外媒体 URL 前缀。
+      MEDIA_PREFIX: ${MEDIA_PREFIX} # 应用内部媒体路径前缀。
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB} # 单文件上传大小限制。
+      MAX_UPLOAD_FILES: ${MAX_UPLOAD_FILES} # 批量上传文件数量限制。
+    volumes:
+      - ${HOST_DATA_DIR}:/data # HOST_DATA_DIR 是群晖宿主机真实数据目录；/data 是容器内部统一数据目录。
+
+  # ==========================================================
+  # frontend：Vue 前端页面
+  #
+  # 提供浏览器中的项目管理、照片上传、地图查看等页面。
+  # FRONTEND_PORT 是前端页面映射到群晖的端口。
+  # VITE_API_BASE_URL 是前端访问后端 API 的完整地址。
+  # VITE_ALLOWED_HOSTS 是前端开发服务允许访问的 Host 列表。
+  # ==========================================================
+  frontend:
+    image: ghcr.io/pdsci996/engineering-photo-map-frontend:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL} # 前端访问后端 API 的完整地址。
+      VITE_ALLOWED_HOSTS: ${VITE_ALLOWED_HOSTS} # 前端允许的 Host 列表。
+      VITE_MAX_UPLOAD_FILES: ${VITE_MAX_UPLOAD_FILES} # 前端批量上传文件数量限制。
+      VITE_UPLOAD_CONCURRENCY: ${VITE_UPLOAD_CONCURRENCY} # 前端上传并发数。
+    ports:
+      - "${FRONTEND_PORT}:80" # FRONTEND_PORT 是前端页面映射到群晖的端口，容器内部端口固定为 80。
+
+# ============================================================
+# 固定 Docker 网络地址
+#
+# Portainer / Docker 地址池不足或冲突时，可以为每个堆栈单独指定网段。
+# 正式堆栈和测试堆栈必须使用不同的 DOCKER_NETWORK_SUBNET。
+# 如果提示 network overlaps，请换一个未被占用的网段和网关。
+# ============================================================
+networks:
+  default:
+    name: ${COMPOSE_PROJECT_NAME}_default
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DOCKER_NETWORK_SUBNET} # 这个堆栈使用的 Docker 网络网段。
+          gateway: ${DOCKER_NETWORK_GATEWAY} # 这个堆栈使用的 Docker 网络网关。
