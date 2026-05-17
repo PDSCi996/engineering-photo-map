@@ -12,7 +12,7 @@ version: "3.9"
 # - IMAGE_TAG 控制 frontend/api/worker 三个应用镜像使用哪个版本。
 # - HOST_DATA_DIR 是群晖宿主机上的真实数据目录。
 # - /data 是容器内部统一数据目录。
-# - FRONTEND_PORT 是前端页面映射到群晖的端口。
+# - FRONTEND_PORT 是前端页面映射到群晖的端口，frontend 容器内部端口固定为 5173。
 # - API_PORT 是后端 API 映射到群晖的端口。
 # - DOCKER_NETWORK_SUBNET / DOCKER_NETWORK_GATEWAY 用于固定 Docker 网络地址。
 # ============================================================
@@ -159,6 +159,7 @@ services:
   #
   # 提供浏览器中的项目管理、照片上传、地图查看等页面。
   # FRONTEND_PORT 是前端页面映射到群晖的端口。
+  # frontend 容器内部端口固定为 5173，不使用 80。
   # VITE_API_BASE_URL 是前端访问后端 API 的完整地址。
   # VITE_ALLOWED_HOSTS 是前端开发服务允许访问的 Host 列表。
   # ==========================================================
@@ -174,7 +175,7 @@ services:
       VITE_MAX_UPLOAD_FILES: ${VITE_MAX_UPLOAD_FILES} # 前端批量上传文件数量限制。
       VITE_UPLOAD_CONCURRENCY: ${VITE_UPLOAD_CONCURRENCY} # 前端上传并发数。
     ports:
-      - "${FRONTEND_PORT}:80" # FRONTEND_PORT 是前端页面映射到群晖的端口，容器内部端口固定为 80。
+      - "${FRONTEND_PORT}:5173" # FRONTEND_PORT 是群晖宿主机映射端口，frontend 容器内部端口固定为 5173。
 
 # ============================================================
 # 固定 Docker 网络地址

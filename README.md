@@ -102,6 +102,7 @@ The default public Release image tag is `v0.4.7-public-initial`.
 - 推荐使用 `docker-compose.image.yml` 作为 Portainer Stack 的 Compose 文件。
 - 以 `.env.synology.example` 为模板创建部署环境变量。
 - 部署前必须替换示例域名、示例地址、示例端口、示例路径和示例密码。
+- 镜像版 Portainer 长期部署可参考 `docker-compose.portainer-image.yml`；frontend 容器内部端口固定为 `5173`，API 容器内部端口固定为 `8000`。
 - 真实部署信息、NAS 截图、日志和备份文件不要提交到公开仓库。
 
 English:
@@ -109,6 +110,7 @@ English:
 - Use `docker-compose.image.yml` as the recommended Portainer Stack compose file.
 - Create deployment environment variables from `.env.synology.example`.
 - Replace all sample domains, addresses, ports, paths, and passwords before deployment.
+- For long-running image-based Portainer stacks, see `docker-compose.portainer-image.yml`; the frontend container listens on `5173`, and the API container listens on `8000`.
 - Do not commit real deployment details, NAS screenshots, logs, or backup files to the public repository.
 
 ## 隐私与安全提醒 / Privacy And Security Notice

@@ -33,6 +33,8 @@ ghcr.io/pdsci996/engineering-photo-map-worker:${IMAGE_TAG}
 - 测试数据目录：`/volume1/docker/photo-map-test/data`
 - 正式堆栈使用：`IMAGE_TAG=stable`
 - 测试堆栈使用：`IMAGE_TAG=v0.4.7-public-initial` 或其他具体版本号
+- 正式堆栈建议：`FRONTEND_PORT=25173`、`API_PORT=18000`
+- 测试堆栈建议：`FRONTEND_PORT=35173`、`API_PORT=29000`
 
 正式堆栈升级前，应先在测试堆栈验证。测试通过后，再把该版本标记为 `stable`，然后升级正式堆栈。
 
@@ -63,8 +65,8 @@ ghcr.io/pdsci996/engineering-photo-map-worker:${IMAGE_TAG}
 COMPOSE_PROJECT_NAME=photo-map-prod
 IMAGE_TAG=stable
 HOST_DATA_DIR=/volume1/docker/photo-map/data
-FRONTEND_PORT=<FRONTEND_PORT>
-API_PORT=<API_PORT>
+FRONTEND_PORT=25173
+API_PORT=18000
 PUBLIC_BASE_URL=https://photos.example.com
 API_BASE_URL=https://api.photos.example.com
 VITE_API_BASE_URL=https://api.photos.example.com
@@ -83,8 +85,8 @@ CORS_ORIGINS=https://photos.example.com
 COMPOSE_PROJECT_NAME=photo-map-test
 IMAGE_TAG=v0.4.7-public-initial
 HOST_DATA_DIR=/volume1/docker/photo-map-test/data
-FRONTEND_PORT=<TEST_FRONTEND_PORT>
-API_PORT=<TEST_API_PORT>
+FRONTEND_PORT=35173
+API_PORT=29000
 PUBLIC_BASE_URL=https://phototest.example.com
 API_BASE_URL=https://api-test.example.com
 VITE_API_BASE_URL=https://api-test.example.com
@@ -105,6 +107,22 @@ CORS_ORIGINS=https://phototest.example.com
 如果有多个前端来源，可以用英文逗号分隔。不要把不需要的域名加入 `CORS_ORIGINS`。
 
 `VITE_ALLOWED_HOSTS` / `ALLOWED_HOSTS` 用于限制允许的 Host。建议包含前端域名、API 域名、`localhost` 和 `127.0.0.1`。生产环境中不要随意使用通配符。
+
+## 端口映射和反向代理
+
+frontend 容器内部端口固定为 `5173`，不使用 `80`。`FRONTEND_PORT` 是群晖宿主机映射端口：
+
+- 正式堆栈建议：`FRONTEND_PORT=25173`
+- 测试堆栈建议：`FRONTEND_PORT=35173`
+
+api 容器内部端口固定为 `8000`。`API_PORT` 是群晖宿主机映射端口：
+
+- 正式堆栈建议：`API_PORT=18000`
+- 测试堆栈建议：`API_PORT=29000`
+
+群晖反向代理中，前端域名应指向群晖本机对应的 `FRONTEND_PORT`，API 域名应指向群晖本机对应的 `API_PORT`。例如测试域名 `phototest` 指向测试堆栈的 `FRONTEND_PORT`，正式域名 `photo` 指向正式堆栈的 `FRONTEND_PORT`。
+
+外网 `80/443`、反向代理监听端口、群晖宿主机映射端口、容器内部端口是四层不同概念。Compose 中只配置宿主机端口到容器内部端口的映射，外网入口由群晖反向代理负责。
 
 ## 固定 Docker 网络地址
 
