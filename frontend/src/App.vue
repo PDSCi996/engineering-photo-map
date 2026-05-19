@@ -3576,7 +3576,15 @@ onBeforeUnmount(() => {
             >
               <span class="sidebar-maximize-icon" aria-hidden="true"></span>
             </button>
-            <button class="sidebar-close-btn" type="button" @click="closeSidebar">×</button>
+            <button
+              class="sidebar-close-btn"
+              type="button"
+              title="关闭侧边栏"
+              aria-label="关闭侧边栏"
+              @click="closeSidebar"
+            >
+              ×
+            </button>
           </div>
         </div>
 
