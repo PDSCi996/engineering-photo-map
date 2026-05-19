@@ -3574,7 +3574,7 @@ onBeforeUnmount(() => {
               :aria-label="sidebarMaximized ? '还原侧边栏' : '最大化侧边栏'"
               @click="toggleSidebarMaximize"
             >
-              {{ sidebarMaximized ? '↙' : '□' }}
+              <span class="sidebar-maximize-icon" aria-hidden="true"></span>
             </button>
             <button class="sidebar-close-btn" type="button" @click="closeSidebar">×</button>
           </div>
