@@ -519,42 +519,60 @@ code {
   z-index: 4;
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
   border-bottom: 1px solid #dbe3ef;
   background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .sidebar-tab-button {
-  flex: 1 1 54px;
-  min-width: 52px;
-  min-height: 38px;
-  padding: 0 6px;
-  border: 0;
-  border-right: 1px solid #e2e8f0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: #475569;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 36px;
+  min-width: 43px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid #d1d5db;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #111827;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 800;
-  white-space: nowrap;
-}
-
-.sidebar-tab-button:last-child {
-  border-right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 2px 5px rgba(15, 23, 42, 0.12);
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
 .sidebar-tab-button:hover {
-  background: #eff6ff;
-  color: #1d4ed8;
+  border-color: #9ca3af;
+  background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 4px 9px rgba(15, 23, 42, 0.16);
 }
 
 .sidebar-tab-button.active {
-  border-bottom-color: var(--pm-blue);
-  background: #dbeafe;
-  color: #1d4ed8;
+  border-color: #111827;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  box-shadow:
+    0 0 0 2px #111827,
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 4px 10px rgba(15, 23, 42, 0.18);
+}
+
+.sidebar-tab-icon {
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.18));
+  transform: translateY(-1px);
 }
 
 .sidebar-tab-content {

@@ -76,12 +76,12 @@ const sidebarResizing = ref(false)
 let sidebarResizeFrame = null
 const activeSidebarTab = ref('project')
 const sidebarTabs = [
-  { key: 'project', name: '项目' },
-  { key: 'photos', name: '照片' },
-  { key: 'noGps', name: '无GPS' },
-  { key: 'points', name: '点位' },
-  { key: 'tasks', name: '任务' },
-  { key: 'export', name: '导出' },
+  { key: 'project', name: '项目', icon: '🏗️' },
+  { key: 'photos', name: '照片', icon: '🖼️' },
+  { key: 'noGps', name: '无GPS', icon: '📍' },
+  { key: 'points', name: '点位', icon: '🎯' },
+  { key: 'tasks', name: '任务', icon: '⚙️' },
+  { key: 'export', name: '导出', icon: '📤' },
 ]
 const mapSearchKeyword = ref('')
 const mapUiPanel = ref(null)
@@ -3594,9 +3594,11 @@ onBeforeUnmount(() => {
             :key="tab.key"
             type="button"
             :class="['sidebar-tab-button', { active: activeSidebarTab === tab.key }]"
+            :title="tab.name"
+            :aria-label="tab.name"
             @click="setSidebarTab(tab.key)"
           >
-            {{ tab.name }}
+            <span class="sidebar-tab-icon" aria-hidden="true">{{ tab.icon }}</span>
           </button>
         </div>
 
