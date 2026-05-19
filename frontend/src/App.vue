@@ -66,6 +66,14 @@ const manualGpsSaving = ref(false)
 const manualGpsMessage = ref('尚未进入补点模式。')
 
 const sidebarOpen = ref(false)
+const SIDEBAR_DEFAULT_WIDTH = 340
+const SIDEBAR_MIN_WIDTH = 200
+const SIDEBAR_MAX_WIDTH = 720
+const sidebarWidth = ref(SIDEBAR_DEFAULT_WIDTH)
+const sidebarWidthBeforeMaximize = ref(SIDEBAR_DEFAULT_WIDTH)
+const sidebarMaximized = ref(false)
+const sidebarResizing = ref(false)
+let sidebarResizeFrame = null
 const activeSidebarTab = ref('project')
 const sidebarTabs = [
   { key: 'project', name: '项目' },
@@ -276,6 +284,15 @@ const mapPointStats = computed(() => {
     invalid: mapAssets.value.length - valid,
   }
 })
+
+const sidebarStyle = computed(() => ({
+  width: sidebarMaximized.value ? '100vw' : `${sidebarWidth.value}px`,
+  maxWidth: sidebarMaximized.value ? '100vw' : 'none',
+}))
+
+const rightPanelStyle = computed(() => ({
+  left: sidebarOpen.value && !sidebarMaximized.value ? `${sidebarWidth.value}px` : '0px',
+}))
 
 const mapGroupStats = computed(() => {
   const groups = buildMapAssetGroups(mapAssets.value)
@@ -813,18 +830,120 @@ function refreshMapSizeSoon() {
   })
 }
 
+function clampSidebarWidth(width) {
+  const viewportWidth = window.innerWidth || SIDEBAR_DEFAULT_WIDTH
+  const viewportLimit = Math.max(SIDEBAR_MIN_WIDTH, viewportWidth - 80)
+  const dragLimit = Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, Math.floor(viewportWidth * 0.6), viewportLimit))
+  const numericWidth = Number(width)
+
+  if (!Number.isFinite(numericWidth)) {
+    return SIDEBAR_DEFAULT_WIDTH
+  }
+
+  return Math.round(Math.min(Math.max(numericWidth, SIDEBAR_MIN_WIDTH), dragLimit))
+}
+
+function refreshMapSizeWhileResizing() {
+  if (sidebarResizeFrame) {
+    return
+  }
+
+  sidebarResizeFrame = requestAnimationFrame(() => {
+    sidebarResizeFrame = null
+    mapInstance?.updateSize()
+  })
+}
+
+function setSidebarWidth(width, { remember = true } = {}) {
+  sidebarWidth.value = clampSidebarWidth(width)
+
+  if (remember && !sidebarMaximized.value) {
+    sidebarWidthBeforeMaximize.value = sidebarWidth.value
+  }
+}
+
+function toggleSidebarMaximize() {
+  if (!sidebarMaximized.value) {
+    sidebarWidthBeforeMaximize.value = sidebarWidth.value
+    sidebarMaximized.value = true
+  } else {
+    sidebarMaximized.value = false
+    setSidebarWidth(sidebarWidthBeforeMaximize.value || SIDEBAR_DEFAULT_WIDTH)
+  }
+
+  refreshMapSizeSoon()
+}
+
+function stopSidebarResize() {
+  if (!sidebarResizing.value) {
+    return
+  }
+
+  sidebarResizing.value = false
+  window.removeEventListener('pointermove', handleSidebarResizeMove)
+  window.removeEventListener('pointerup', stopSidebarResize)
+  window.removeEventListener('pointercancel', stopSidebarResize)
+  refreshMapSizeSoon()
+}
+
+function handleSidebarResizeMove(event) {
+  if (!sidebarResizing.value) {
+    return
+  }
+
+  setSidebarWidth(event.clientX, { remember: false })
+  sidebarMaximized.value = false
+  sidebarWidthBeforeMaximize.value = sidebarWidth.value
+  refreshMapSizeWhileResizing()
+}
+
+function startSidebarResize(event) {
+  if (event.button !== undefined && event.button !== 0) {
+    return
+  }
+
+  sidebarOpen.value = true
+  sidebarResizing.value = true
+  sidebarMaximized.value = false
+  event.preventDefault()
+  window.addEventListener('pointermove', handleSidebarResizeMove)
+  window.addEventListener('pointerup', stopSidebarResize)
+  window.addEventListener('pointercancel', stopSidebarResize)
+}
+
+function handleWindowResize() {
+  setSidebarWidth(sidebarWidth.value, {
+    remember: !sidebarMaximized.value,
+  })
+  refreshMapSizeSoon()
+}
+
+function resetSidebarWidthState() {
+  sidebarMaximized.value = false
+  sidebarWidth.value = clampSidebarWidth(SIDEBAR_DEFAULT_WIDTH)
+  sidebarWidthBeforeMaximize.value = sidebarWidth.value
+}
+
 function toggleSidebar() {
-  sidebarOpen.value = !sidebarOpen.value
+  if (sidebarOpen.value) {
+    sidebarOpen.value = false
+    resetSidebarWidthState()
+  } else {
+    resetSidebarWidthState()
+    sidebarOpen.value = true
+  }
   refreshMapSizeSoon()
 }
 
 function openSidebar() {
+  resetSidebarWidthState()
   sidebarOpen.value = true
   refreshMapSizeSoon()
 }
 
 function closeSidebar() {
   sidebarOpen.value = false
+  resetSidebarWidthState()
   refreshMapSizeSoon()
 }
 
@@ -3363,6 +3482,8 @@ watch(currentProject, async (project) => {
 onMounted(async () => {
   syncRoute()
   window.addEventListener('hashchange', syncRoute)
+  window.addEventListener('resize', handleWindowResize)
+  handleWindowResize()
   initMap()
   await loadProjects()
   await refreshAllTaskData()
@@ -3374,8 +3495,15 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('hashchange', syncRoute)
+  window.removeEventListener('resize', handleWindowResize)
+  stopSidebarResize()
   stopTrackedTaskPolling()
   stopSmartPolling()
+
+  if (sidebarResizeFrame) {
+    cancelAnimationFrame(sidebarResizeFrame)
+    sidebarResizeFrame = null
+  }
 
   if (mapMarkerSource) {
     mapMarkerSource.clear()
@@ -3397,7 +3525,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-shell">
+  <div :class="['app-shell', { 'sidebar-is-resizing': sidebarResizing }]">
     <header class="app-header">
       <div class="brand-block">
         <div class="brand-row">
@@ -3432,10 +3560,24 @@ onBeforeUnmount(() => {
     </header>
 
     <main v-if="!isDiagnosticsPage" class="app-main">
-      <section v-show="sidebarOpen" class="left-panel">
+      <section
+        v-show="sidebarOpen"
+        :class="['left-panel', { 'left-panel-resizing': sidebarResizing }]"
+        :style="sidebarStyle"
+      >
         <div class="sidebar-close-row">
-          <strong>工作侧边栏</strong>
-          <button class="sidebar-close-btn" @click="closeSidebar">×</button>
+          <div class="sidebar-window-actions">
+            <button
+              class="sidebar-size-btn"
+              type="button"
+              :title="sidebarMaximized ? '还原侧边栏' : '最大化侧边栏'"
+              :aria-label="sidebarMaximized ? '还原侧边栏' : '最大化侧边栏'"
+              @click="toggleSidebarMaximize"
+            >
+              {{ sidebarMaximized ? '↙' : '□' }}
+            </button>
+            <button class="sidebar-close-btn" type="button" @click="closeSidebar">×</button>
+          </div>
         </div>
 
         <div class="sidebar-tab-row" role="tablist" aria-label="工作侧边栏标签">
@@ -4045,9 +4187,17 @@ onBeforeUnmount(() => {
             </div>
           </template>
         </div>
+
+        <div
+          class="sidebar-resize-handle"
+          role="separator"
+          aria-label="拖动调整侧边栏宽度"
+          aria-orientation="vertical"
+          @pointerdown="startSidebarResize"
+        ></div>
       </section>
 
-      <section class="right-panel">
+      <section class="right-panel" :style="rightPanelStyle">
         <div class="map-card">
           <div class="map-shell">
             <div class="osm-map-toolbar" aria-label="地图工具栏">

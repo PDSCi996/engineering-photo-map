@@ -268,6 +268,17 @@ code {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  transition: left 0.14s ease;
+}
+
+.sidebar-is-resizing,
+.sidebar-is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.sidebar-is-resizing .right-panel {
+  transition: none;
 }
 
 .map-card {
@@ -338,16 +349,15 @@ code {
   top: 0;
   left: 0;
   bottom: 0;
-  width: 323px;
-  max-width: min(323px, 92vw);
+  width: 340px;
+  max-width: none;
   height: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
   padding: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   scrollbar-width: thin;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 2px 0 16px rgba(15, 23, 42, 0.18);
@@ -407,13 +417,42 @@ code {
   z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 42px;
+  padding: 7px 9px;
   border-bottom: 1px solid #d1d5db;
   background: rgba(255, 255, 255, 0.98);
   color: #111827;
   font-size: 13px;
+}
+
+.sidebar-window-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+.sidebar-size-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #334155;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.sidebar-size-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .sidebar-close-btn,
@@ -431,6 +470,25 @@ code {
 .sidebar-close-btn:hover,
 .close-btn:hover {
   background: #e2e8f0;
+}
+
+.sidebar-window-actions .sidebar-close-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #334155;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.sidebar-window-actions .sidebar-close-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .sidebar-tab-row {
@@ -474,7 +532,53 @@ code {
 }
 
 .sidebar-tab-content {
+  flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.sidebar-tab-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-tab-content::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.9);
+}
+
+.sidebar-tab-content::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  z-index: 10;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+}
+
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 3px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(148, 163, 184, 0.42);
+  transition: width 0.12s ease, background 0.12s ease;
+}
+
+.sidebar-resize-handle:hover::after,
+.left-panel-resizing .sidebar-resize-handle::after {
+  right: 2px;
+  width: 4px;
+  background: rgba(37, 99, 235, 0.72);
 }
 
 .form-group {
@@ -1671,8 +1775,7 @@ select:focus {
   }
 
   .left-panel {
-    width: 318px;
-    max-width: min(318px, 92vw);
+    max-width: none;
   }
 
   .osm-map-toolbar {
@@ -1697,8 +1800,7 @@ select:focus {
   }
 
   .left-panel {
-    width: min(318px, 92vw);
-    max-width: 92vw;
+    max-width: none;
   }
 
   .photo-card,
