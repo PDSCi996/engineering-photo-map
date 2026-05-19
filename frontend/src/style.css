@@ -515,10 +515,11 @@ code {
 
 .sidebar-tab-row {
   position: sticky;
-  top: 45px;
+  top: 31px;
   z-index: 4;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: 0;
   border-bottom: 1px solid #dbe3ef;
   background: rgba(255, 255, 255, 0.98);
@@ -526,8 +527,10 @@ code {
 }
 
 .sidebar-tab-button {
+  flex: 1 1 54px;
+  min-width: 52px;
   min-height: 38px;
-  padding: 0 8px;
+  padding: 0 6px;
   border: 0;
   border-right: 1px solid #e2e8f0;
   border-bottom: 2px solid transparent;
@@ -536,9 +539,10 @@ code {
   cursor: pointer;
   font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
-.sidebar-tab-button:nth-child(3n) {
+.sidebar-tab-button:last-child {
   border-right: 0;
 }
 
