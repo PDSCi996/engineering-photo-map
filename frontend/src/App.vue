@@ -67,7 +67,7 @@ const manualGpsMessage = ref('尚未进入补点模式。')
 
 const sidebarOpen = ref(false)
 const SIDEBAR_DEFAULT_WIDTH = 340
-const SIDEBAR_MIN_WIDTH = 200
+const SIDEBAR_MIN_WIDTH = 330
 const SIDEBAR_MAX_WIDTH = 720
 const sidebarWidth = ref(SIDEBAR_DEFAULT_WIDTH)
 const sidebarWidthBeforeMaximize = ref(SIDEBAR_DEFAULT_WIDTH)
@@ -76,12 +76,12 @@ const sidebarResizing = ref(false)
 let sidebarResizeFrame = null
 const activeSidebarTab = ref('project')
 const sidebarTabs = [
-  { key: 'project', name: '项目', icon: '🏗️' },
-  { key: 'photos', name: '照片', icon: '🖼️' },
-  { key: 'noGps', name: '无GPS', icon: '📍' },
-  { key: 'points', name: '点位', icon: '🎯' },
-  { key: 'tasks', name: '任务', icon: '⚙️' },
-  { key: 'export', name: '导出', icon: '📤' },
+  { key: 'project', name: '项目', tooltip: '项目管理：创建、切换和管理工程项目，照片、点位和任务都会归属到当前项目。' },
+  { key: 'photos', name: '照片', tooltip: '照片管理：上传、查看和处理工程照片，读取拍摄时间、GPS 和缩略图信息。' },
+  { key: 'noGps', name: '无GPS', tooltip: '无GPS照片：集中查看没有定位信息的照片，后续可手动补充或修正位置。' },
+  { key: 'points', name: '点位', tooltip: '点位管理：查看、定位和维护地图上的照片点位，用于工程位置核对和展示。' },
+  { key: 'tasks', name: '任务', tooltip: '任务管理：查看照片处理、缩略图生成、导入导出等后台任务执行状态。' },
+  { key: 'export', name: '导出', tooltip: '导出打印：导出 CSV、GeoJSON、QGIS 样式和资料包，供制图、打印和归档使用。' },
 ]
 const mapSearchKeyword = ref('')
 const mapUiPanel = ref(null)
@@ -3594,11 +3594,51 @@ onBeforeUnmount(() => {
             :key="tab.key"
             type="button"
             :class="['sidebar-tab-button', { active: activeSidebarTab === tab.key }]"
-            :title="tab.name"
-            :aria-label="tab.name"
+            :title="tab.tooltip"
+            :aria-label="tab.tooltip"
             @click="setSidebarTab(tab.key)"
           >
-            <span class="sidebar-tab-icon" aria-hidden="true">{{ tab.icon }}</span>
+            <span class="sidebar-tab-icon" aria-hidden="true">
+              <svg v-if="tab.key === 'project'" viewBox="0 0 24 24" class="tab-tool-icon">
+                <path d="M4 19.2V8.8L12 4.4l8 4.4v10.4H4Z" fill="#dbeafe" stroke="#2563eb" />
+                <path d="M7.2 19.2v-6.4h9.6v6.4" fill="#f8fafc" stroke="#2563eb" />
+                <path d="M8.4 10.2h2.2M13.4 10.2h2.2" stroke="#0f766e" />
+                <path d="M5.8 18h12.4" stroke="#f59e0b" />
+              </svg>
+              <svg v-else-if="tab.key === 'photos'" viewBox="0 0 24 24" class="tab-tool-icon">
+                <rect x="4.2" y="5" width="15.6" height="14" rx="2" fill="#eff6ff" stroke="#2563eb" />
+                <path d="M6.2 17.2l4.2-4.1 3 2.8 1.8-1.7 2.6 3H6.2Z" fill="#34d399" stroke="#059669" />
+                <circle cx="9" cy="9.8" r="1.7" fill="#fbbf24" stroke="#d97706" />
+                <path d="M5.8 7.3h12.4" stroke="#93c5fd" />
+              </svg>
+              <svg v-else-if="tab.key === 'noGps'" viewBox="0 0 24 24" class="tab-tool-icon">
+                <path d="M12 21s5.8-5.1 5.8-10.8a5.8 5.8 0 0 0-11.6 0C6.2 15.9 12 21 12 21Z" fill="#fb7185" stroke="#be123c" />
+                <circle cx="12" cy="10.1" r="2.2" fill="#fee2e2" stroke="#be123c" />
+                <path d="M5 4.8 19 19.2" stroke="#334155" />
+                <path d="M4.4 5.4 5.6 4.2M18.4 19.8l1.2-1.2" stroke="#334155" />
+              </svg>
+              <svg v-else-if="tab.key === 'points'" viewBox="0 0 24 24" class="tab-tool-icon">
+                <circle cx="12" cy="12" r="7.1" fill="#dbeafe" stroke="#2563eb" />
+                <circle cx="12" cy="12" r="4.2" fill="#bfdbfe" stroke="#2563eb" />
+                <circle cx="12" cy="12" r="2" fill="#22c55e" stroke="#15803d" />
+                <path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3" stroke="#334155" />
+              </svg>
+              <svg v-else-if="tab.key === 'tasks'" viewBox="0 0 24 24" class="tab-tool-icon">
+                <rect x="5.2" y="4.6" width="13.6" height="15.4" rx="2" fill="#f8fafc" stroke="#475569" />
+                <path d="M9 3.9h6l.8 2.4H8.2L9 3.9Z" fill="#bfdbfe" stroke="#2563eb" />
+                <path d="M8.2 10h6.8M8.2 13.4h5" stroke="#64748b" />
+                <path d="m14.3 17 1.5 1.5 3-3.2" stroke="#16a34a" />
+                <path d="M8.2 16.8h3.4" stroke="#64748b" />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" class="tab-tool-icon">
+                <path d="M6 16.8h12v2.6H6v-2.6Z" fill="#ccfbf1" stroke="#0f766e" />
+                <path d="M8 13.6h8l1.5 3.2h-11L8 13.6Z" fill="#f8fafc" stroke="#0f766e" />
+                <path d="M12 4.4v9.1" stroke="#2563eb" />
+                <path d="m8.7 10.3 3.3 3.3 3.3-3.3" fill="#dbeafe" stroke="#2563eb" />
+                <path d="M7 19.4h10" stroke="#14b8a6" />
+              </svg>
+            </span>
+            <span v-if="activeSidebarTab === tab.key" class="sidebar-tab-label">{{ tab.name }}</span>
           </button>
         </div>
 
